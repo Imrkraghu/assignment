@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Map Location Viewer</title>
+
+  <!-- Tailwind CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    #map { height: 80vh; width: 100%; }
+  </style>
+</head>
+<body class="bg-white text-green-900">
+
+  <!-- Header -->
+  <header class="bg-green-600 p-4 flex justify-between items-center shadow">
+    <h1 class="text-2xl font-bold text-white">🗺️ Map Location Viewer</h1>
+    <div class="space-x-2">
+      <a href="{% url 'adminpage' %}" class="bg-white text-green-700 font-semibold py-2 px-4 rounded hover:bg-green-100 transition">Login</a>
+      <a href="{% url 'adminpage' %}" class="bg-white text-green-700 font-semibold py-2 px-4 rounded hover:bg-green-100 transition">Edit Locations</a>
+    </div>
+  </header>
+
+  <!-- Map Section -->
+  <main class="p-4">
+    <div id="map" class="rounded-lg border-2 border-green-200 shadow-md"></div>
+  </main>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const map = L.map('map').setView([20.5937, 78.9629], 5); // Centered on India
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    fetch('/api/geojson/')
+      .then(res => res.json())
+      .then(data => {
+        L.geoJSON(data, {
+          onEachFeature: function (feature, layer) {
+            const props = feature.properties;
+            layer.bindPopup(`<strong>${props.name}</strong><br>${props.category}`);
+          }
+        }).addTo(map);
+      });
+  </script>
+
+</body>
+</html>
