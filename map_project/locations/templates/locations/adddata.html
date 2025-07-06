@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Add Location - Auto Geocode</title>
+
+  <!-- Tailwind CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+
+  <style>
+    #map {
+      height: 80vh;
+      width: 100%;
+    }
+  </style>
+</head>
+<body class="bg-white text-green-900">
+
+  <!-- Header -->
+  <header class="bg-green-600 p-4 text-center shadow">
+    <h1 class="text-3xl font-bold text-white">📍 Add a New Location</h1>
+  </header>
+
+  <!-- Input Controls -->
+  <main class="max-w-8xl mx-auto p-8">
+    <div class="bg-green-50 p-6 rounded-lg shadow-md">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        
+        <!-- Location Input with Autocomplete -->
+        <div class="flex flex-col relative col-span-1 md:col-span-2">
+          <label for="locationName" class="font-semibold mb-1">Location Name:</label>
+          <input
+            type="text"
+            id="locationName"
+            placeholder="e.g. Taj Mahal"
+            class="border border-green-300 rounded p-2 z-20 relative"
+            oninput="autocompleteLocation()"
+            autocomplete="off"
+          />
+          <ul
+            id="suggestions"
+            class="absolute z-10 bg-white border border-green-300 rounded w-full mt-1 hidden max-h-48 overflow-y-auto shadow-lg"
+            style="top: 100%;"
+          ></ul>
+        </div>
+
+        <!-- Category Dropdown -->
+        <div class="flex flex-col">
+          <label for="category" class="font-semibold mb-1">Category:</label>
+          <select id="category" class="border border-green-300 rounded p-2">
+            <option value="Landmark">Landmark</option>
+            <option value="Restaurant">Restaurant</option>
+            <option value="Park">Park</option>
+            <option value="Museum">Museum</option>
+          </select>
+        </div>
+
+        <!-- Buttons -->
+        <button onclick="fetchCoordinates()" class="bg-green-500 hover:bg-green-600 text-white font-medium py-2.5 px-3 rounded self-end">
+          Search Coordinates
+        </button>
+
+        <button onclick="addLocation()" class="bg-green-500 hover:bg-green-600 text-white font-medium py-2.5 px-3 rounded self-end">
+          Add Location
+        </button>
+
+      <button onclick="downloadGeoJSON()" 
+  class="bg-green-500 hover:bg-green-600 text-white font-medium py-2.5 px-3 rounded">
+  Download JSON File
+</button>
+
+
+      <!-- Latitude and Longitude -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+        <div class="flex flex-col">
+          <label class="font-semibold mb-1">Latitude:</label>
+          <p id="latitude" class="border border-green-300 rounded p-2 bg-white">—</p>
+        </div>
+        <div class="flex flex-col">
+          <label class="font-semibold mb-1">Longitude:</label>
+          <p id="longitude" class="border border-green-300 rounded p-2 bg-white">—</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map (Centered on India) -->
+    <div id="map" class="mt-6"></div>
+  </main>
+
+  <footer class="text-center text-sm text-gray-500 my-6">
+    &copy; 2025 Map Viewer Admin Page
+  </footer>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <script>
+    const map = L.map('map').setView([22.9734, 78.6569], 5); // Centered on India
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let currentMarker = null;
+
+    function fetchCoordinates() {
+      const locationName = document.getElementById('locationName').value.trim();
+      if (!locationName) {
+        alert("Please enter a location name.");
+        return;
+      }
+
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationName)}`;
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            const { lat, lon } = data[0];
+            document.getElementById('latitude').textContent = lat;
+            document.getElementById('longitude').textContent = lon;
+
+            if (currentMarker) {
+              map.removeLayer(currentMarker);
+            }
+            currentMarker = L.marker([lat, lon]).addTo(map)
+              .bindPopup(locationName).openPopup();
+
+            map.setView([lat, lon], 13);
+          } else {
+            alert("Could not find coordinates. Try being more specific.");
+          }
+        })
+        .catch(error => {
+          console.error("Geocoding error:", error);
+          alert("Error fetching location data.");
+        });
+    }
+function addLocation() {
+  const name = document.getElementById('locationName').value.trim();
+  const lat = parseFloat(document.getElementById('latitude').textContent);
+  const lon = parseFloat(document.getElementById('longitude').textContent);
+  const category = document.getElementById('category').value;
+
+  if (!name || isNaN(lat) || isNaN(lon)) {
+    alert("Please fill out all fields correctly.");
+    return;
+  }
+
+  // Generate UUID for the location
+  const locationId = crypto.randomUUID(); // requires modern browsers
+
+  const locationData = {
+    id: locationId,
+    name,
+    latitude: lat,
+    longitude: lon,
+    category
+  };
+
+  console.log("Generated Location Dictionary:", locationData); // ✅ Debug dictionary
+
+  fetch('/save_location/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken')
+    },
+    body: JSON.stringify(locationData)
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      alert('Location added successfully!');
+      document.getElementById('locationName').value = '';
+      document.getElementById('latitude').textContent = '—';
+      document.getElementById('longitude').textContent = '—';
+      if (currentMarker) {
+        map.removeLayer(currentMarker);
+        currentMarker = null;
+      }
+    } else {
+      alert('Error: ' + (data.error || 'Unknown error'));
+    }
+  })
+  .catch(err => {
+    alert('Request failed: ' + err);
+  });
+
+  L.marker([lat, lon]).addTo(map)
+    .bindPopup(`<strong>${name}</strong><br>Category: ${category}`).openPopup();
+  map.setView([lat, lon], 13);
+}
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+          cookie = cookie.trim();
+          if (cookie.startsWith(name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+function downloadGeoJSON() {
+  fetch('/download/geojson/')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Failed to fetch GeoJSON file");
+      }
+      return response.blob();
+    })
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+
+      // Use timestamped filename
+      const now = new Date();
+      const timestamp = now.toISOString().replace(/[-:.]/g, "").slice(0, 15);
+      link.download = `locations_${timestamp}.json`;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    })
+    .catch(error => {
+      console.error("Download error:", error);
+      alert("Failed to download GeoJSON file.");
+    });
+}
+
+    // Autocomplete Logic
+    let debounceTimer;
+    function autocompleteLocation() {
+      const input = document.getElementById('locationName');
+      const suggestionsList = document.getElementById('suggestions');
+      const query = input.value.trim();
+
+      if (debounceTimer) clearTimeout(debounceTimer);
+      if (query.length < 3) {
+        suggestionsList.innerHTML = '';
+        suggestionsList.classList.add('hidden');
+        return;
+      }
+
+      debounceTimer = setTimeout(() => {
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`)
+          .then(response => response.json())
+          .then(results => {
+            suggestionsList.innerHTML = '';
+            if (results.length === 0) {
+              suggestionsList.classList.add('hidden');
+              return;
+            }
+
+            results.forEach(place => {
+              const li = document.createElement('li');
+              li.textContent = place.display_name;
+              li.className = 'px-3 py-2 hover:bg-green-100 cursor-pointer';
+              li.onclick = () => {
+                input.value = place.display_name;
+                suggestionsList.classList.add('hidden');
+                fetchCoordinates();
+              };
+              suggestionsList.appendChild(li);
+            });
+
+            suggestionsList.classList.remove('hidden');
+          })
+          .catch(error => {
+            console.error("Autocomplete error:", error);
+            suggestionsList.classList.add('hidden');
+          });
+      }, 300);
+    }
+
+    document.addEventListener('click', function (e) {
+      const suggestions = document.getElementById('suggestions');
+      if (!document.getElementById('locationName').contains(e.target)) {
+        suggestions.classList.add('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

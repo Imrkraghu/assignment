@@ -1,10 +1,10 @@
 from django.urls import path
-from .views import LocationGeoJSONView, LocationStatsView
 from . import views
 
 urlpatterns = [
-    path('',views.index, name='home'),
-    path('adminpage/',views.adminpage, name='adminpage'),
-    path('geojson/', LocationGeoJSONView.as_view(), name='geojson'),
-    path('stats/', LocationStatsView.as_view(), name='stats'),
+    path('', views.adminpage, name='home'),
+    path('login/', views.login_user, name="login_user"),
+    path('adddata/', views.adddata_page, name="adddata_page"),
+    path('save_location/', views.save_location, name="save_location"),
+    path('download/geojson/', views.download_geojson_file, name="download_geojson"),
 ]
