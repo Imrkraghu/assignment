@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          78.0421013,
+          27.1750075
+        ]
+      },
+      "properties": {
+        "id": 1,
+        "name": "Taj Mahal, Taj East Gate Road, \u0924\u093e\u091c \u0917\u0902\u091c, Agra, \u0906\u0917\u0930\u093e, Uttar Pradesh, 282004, India",
+        "category": "Landmark",
+        "screenshot": "Taj Mahal_ Taj East Gate Road_ \u0924_\u091c \u0917_\u091c_ Agra_ \u0906\u0917\u0930__ Uttar Pradesh_ 282004_ India.png"
+      }
+    }
+  ]
+}
