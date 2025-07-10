@@ -16,6 +16,22 @@
         "category": "Landmark",
         "screenshot": "Taj Mahal_ Taj East Gate Road_ \u0924_\u091c \u0917_\u091c_ Agra_ \u0906\u0917\u0930__ Uttar Pradesh_ 282004_ India.png"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          78.7023404,
+          23.8560201
+        ]
+      },
+      "properties": {
+        "id": 2,
+        "name": "Gourav",
+        "category": "hotel",
+        "screenshot": "Gourav.png"
+      }
     }
   ]
 }

@@ -49,12 +49,15 @@
 
         <!-- Category Dropdown -->
         <div class="flex flex-col">
-          <label for="category" class="font-semibold mb-1">Category:</label>
-          <select id="category" class="border border-green-300 rounded p-2">
-            <option value="Landmark">Landmark</option>
-            <option value="Restaurant">Restaurant</option>
-            <option value="Park">Park</option>
-            <option value="Museum">Museum</option>
+          <label for="locationCategory">Select Category:</label>
+          <select id="locationCategory">
+            <option value="">--Choose a Category--</option>
+            <option value="restaurant">Restaurant</option>
+            <option value="hotel">Hotel</option>
+            <option value="monument">Monument</option>
+            <option value="park">Park</option>
+            <option value="mall">Mall</option>
+            <option value="museum">Museum</option>
           </select>
         </div>
 
@@ -108,44 +111,48 @@
     }).addTo(map);
 
     let currentMarker = null;
+function fetchCoordinates() {
+  const locationName = document.getElementById('locationName').value.trim();
+  const category = document.getElementById('locationCategory').value.trim(); // New field
 
-    function fetchCoordinates() {
-      const locationName = document.getElementById('locationName').value.trim();
-      if (!locationName) {
-        alert("Please enter a location name.");
-        return;
+  if (!locationName || !category) {
+    alert("Please enter both a location name and category.");
+    return;
+  }
+
+  const fullQuery = `${locationName} ${category}`;
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullQuery)}`;
+
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      if (data && data.length > 0) {
+        const { lat, lon } = data[0];
+        document.getElementById('latitude').textContent = lat;
+        document.getElementById('longitude').textContent = lon;
+
+        if (currentMarker) {
+          map.removeLayer(currentMarker);
+        }
+
+        currentMarker = L.marker([lat, lon]).addTo(map)
+          .bindPopup(`${locationName} (${category})`).openPopup();
+
+        map.setView([lat, lon], 13);
+      } else {
+        alert("Could not find coordinates. Try being more specific.");
       }
-
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationName)}`;
-      fetch(url)
-        .then(response => response.json())
-        .then(data => {
-          if (data && data.length > 0) {
-            const { lat, lon } = data[0];
-            document.getElementById('latitude').textContent = lat;
-            document.getElementById('longitude').textContent = lon;
-
-            if (currentMarker) {
-              map.removeLayer(currentMarker);
-            }
-            currentMarker = L.marker([lat, lon]).addTo(map)
-              .bindPopup(locationName).openPopup();
-
-            map.setView([lat, lon], 13);
-          } else {
-            alert("Could not find coordinates. Try being more specific.");
-          }
-        })
-        .catch(error => {
-          console.error("Geocoding error:", error);
-          alert("Error fetching location data.");
-        });
-    }
+    })
+    .catch(error => {
+      console.error("Geocoding error:", error);
+      alert("Error fetching location data.");
+    });
+}
 function addLocation() {
   const name = document.getElementById('locationName').value.trim();
   const lat = parseFloat(document.getElementById('latitude').textContent);
   const lon = parseFloat(document.getElementById('longitude').textContent);
-  const category = document.getElementById('category').value;
+  const category = document.getElementById('locationCategory').value;
 
   if (!name || isNaN(lat) || isNaN(lon)) {
     alert("Please fill out all fields correctly.");
@@ -176,6 +183,7 @@ function addLocation() {
           document.getElementById('locationName').value = '';
           document.getElementById('latitude').textContent = '—';
           document.getElementById('longitude').textContent = '—';
+          document.getElementById('locationCategory').value = '';
           if (currentMarker) {
             map.removeLayer(currentMarker);
             currentMarker = null;

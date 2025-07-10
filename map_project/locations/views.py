@@ -208,3 +208,21 @@ def download_excel_report(request):
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+def search_location(request):
+    name = request.GET.get("name", "").strip().lower()
+    category = request.GET.get("category", "").strip().lower()
+
+    if not name or not category:
+        return JsonResponse({"error": "Please provide both name and category."}, status=400)
+
+    matched = []
+    for feature in geojson_store.get("features", []):
+        props = feature.get("properties", {})
+        if props.get("name", "").strip().lower() == name and props.get("category", "").strip().lower() == category:
+            matched.append(feature)
+
+    if not matched:
+        return JsonResponse({"message": "No matching locations found."}, status=404)
+
+    return JsonResponse({"matches": matched}, status=200)
